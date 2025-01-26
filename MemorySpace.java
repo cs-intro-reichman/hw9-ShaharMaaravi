@@ -1,3 +1,4 @@
+
 /**
  * Represents a managed memory space. The memory space manages a list of allocated 
  * memory blocks, and a list free memory blocks. The methods "malloc" and "free" are 
@@ -7,7 +8,6 @@ public class MemorySpace {
 	
 	// A list of the memory blocks that are presently allocated
 	private LinkedList allocatedList;
-
 	// A list of memory blocks that are presently free
 	private LinkedList freeList;
 
@@ -58,8 +58,24 @@ public class MemorySpace {
 	 * @return the base address of the allocated block, or -1 if unable to allocate
 	 */
 	public int malloc(int length) {		
-		//// Replace the following statement with your code
-		return -1;
+		ListIterator it = freeList.iterator();
+		while (it.hasNext()) {
+			MemoryBlock temp = it.next();
+			if (temp.length > length) { // found a memory block that fits
+				MemoryBlock m = new MemoryBlock(temp.baseAddress, length); // created the memory block
+					temp.baseAddress += length;
+					temp.length -= length;
+				allocatedList.addLast(m);
+				return m.baseAddress;
+			}
+			if (temp.length == length) { // need to be removed
+				MemoryBlock m = new MemoryBlock(temp.baseAddress, length);
+				allocatedList.addLast(m);
+				freeList.remove(temp);
+				return m.baseAddress;
+			}
+		}
+		return -1; // if no suitable block is found
 	}
 
 	/**
@@ -71,13 +87,24 @@ public class MemorySpace {
 	 *            the starting address of the block to freeList
 	 */
 	public void free(int address) {
-		//// Write your code here
+		ListIterator aList = allocatedList.iterator();
+		while (aList.hasNext()){
+			MemoryBlock temp =aList.current.block;
+			if (temp.baseAddress == address){
+				allocatedList.remove(temp);
+				freeList.addLast(temp);
+				return;
+			}
+			aList.next();
+		}
+		
 	}
 	
 	/**
 	 * A textual representation of the free list and the allocated list of this memory space, 
 	 * for debugging purposes.
 	 */
+        @Override
 	public String toString() {
 		return freeList.toString() + "\n" + allocatedList.toString();		
 	}
@@ -88,7 +115,22 @@ public class MemorySpace {
 	 * In this implementation Malloc does not call defrag.
 	 */
 	public void defrag() {
-		/// TODO: Implement defrag test
-		//// Write your code here
+		ListIterator firstIter = freeList.iterator();
+		ListIterator secondIter = freeList.iterator();
+		while(firstIter.hasNext()){ // first loop, runs to check at the ends of each block address
+			secondIter.next();
+			int concatAddress = firstIter.current.block.baseAddress + firstIter.current.block.length; // end of empty block index
+			while(secondIter.hasNext()){ // second loop, runs to check if any of the blocks start at end of the firstIter address
+				if(secondIter.current.block.baseAddress == concatAddress){
+					firstIter.current.block.length = firstIter.current.block.length + secondIter.current.block.length;
+					freeList.remove(secondIter.current.block);
+					firstIter = freeList.iterator(); // defaults the first iter run, so that any double/triple/etc concatenations will be made if possible
+					break;
+				}
+				else secondIter.next();
+			}
+			secondIter = freeList.iterator(); // rewinds secondIter so to check the whole list (list is not ordered)
+			firstIter.next();
 	}
+}
 }
